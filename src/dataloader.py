@@ -1,72 +1,69 @@
+# file: dataloader.py
 import os
 import pandas as pd
+import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
+from torchvision import transforms
 
+# -----------------------
+# Custom Dataset
+# -----------------------
 class ChestXrayDataset(Dataset):
     def __init__(self, csv_file, img_dir, transform=None):
-        """
-        Args:
-            csv_file (str): Path to CSV file with image names + labels
-            img_dir (str): Directory with all images
-            transform (callable, optional): Optional transform to apply to images
-        """
         self.data = pd.read_csv(csv_file)
         self.img_dir = img_dir
         self.transform = transform
+
+        # all disease columns (skip first 2: Image Index + Patient ID)
+        self.label_columns = self.data.columns[2:]
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        img_name = self.data.iloc[idx]["Image Index"]
-        label = self.data.iloc[idx]["label"]
+        img_name = self.data.iloc[idx, 0]   # column 0 = filename
+        labels   = self.data.iloc[idx, 2:].values.astype("float32")  # columns 2..end = one-hot labels
 
-        # Full path
         img_path = os.path.join(self.img_dir, img_name)
-
-        # Load image
         image = Image.open(img_path).convert("RGB")
 
-        # Apply transforms if given
         if self.transform:
             image = self.transform(image)
 
-        return image, label
+        labels = torch.tensor(labels, dtype=torch.float32)  # shape [14]
+        return image, labels
 
+# -----------------------
+# Transforms
+# -----------------------
+train_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.RandomCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
 
-def get_dataloaders(batch_size=32, img_dir="data/images"):
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ])
+val_test_transform = transforms.Compose([
+    transforms.Resize(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
 
-    train_dataset = ChestXrayDataset("data/train.csv", img_dir, transform)
-    val_dataset   = ChestXrayDataset("data/val.csv", img_dir, transform)
-    test_dataset  = ChestXrayDataset("data/test.csv", img_dir, transform)
+# -----------------------
+# Dataloader function
+# -----------------------
+def get_dataloaders(img_dir="data/images", batch_size=32,
+                    train_csv="data/train.csv", val_csv="data/val.csv", test_csv="data/test.csv"):
+    train_dataset = ChestXrayDataset(train_csv, img_dir, transform=train_transform)
+    val_dataset   = ChestXrayDataset(val_csv, img_dir, transform=val_test_transform)
+    test_dataset  = ChestXrayDataset(test_csv, img_dir, transform=val_test_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     return train_loader, val_loader, test_loader
-
-
-from dataloader import get_dataloaders
-
-if __name__ == "__main__":
-    train_loader, val_loader, test_loader = get_dataloaders(
-        img_dir="data/images",
-        batch_size=32
-    )
-
-
-    # Sanity check: print one batch
-    for images, labels in train_loader:
-        print("Batch image tensor shape:", images.shape)
-        print("Batch label tensor shape:", labels.shape)
-        print("Labels:", labels[:10])  # print first 10 labels
-        break

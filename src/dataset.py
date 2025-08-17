@@ -1,9 +1,10 @@
 import pandas as pd
-import numpy as np
 from sklearn.model_selection import train_test_split
 
+# -----------------------
 # Paths
-LABELS_CSV = "data\Data_Entry_2017_v2020 (1).csv"
+# -----------------------
+LABELS_CSV = "data/labels_onehot.csv"   # <- your new one-hot file
 OUTPUT_DIR = "data"
 
 # -----------------------
@@ -11,21 +12,8 @@ OUTPUT_DIR = "data"
 # -----------------------
 df = pd.read_csv(LABELS_CSV)
 
-# Keep only the useful columns
-df = df[["Image Index", "Patient ID", "Finding Labels"]]
-
 # -----------------------
-# Step 2. Create binary pneumonia label
-# -----------------------
-df["label"] = df["Finding Labels"].apply(lambda x: 1 if "Pneumonia" in x else 0)
-
-# Save full binary label file
-df.to_csv(f"{OUTPUT_DIR}/all_labels.csv", index=False)
-
-print("✅ all_labels.csv created")
-
-# -----------------------
-# Step 3. Patient-wise split
+# Step 2. Patient-wise split
 # -----------------------
 # Get unique patients
 patients = df["Patient ID"].unique()
@@ -43,14 +31,19 @@ train_df = subset_by_patients(df, train_patients)
 val_df   = subset_by_patients(df, val_patients)
 test_df  = subset_by_patients(df, test_patients)
 
-# Save splits
+# -----------------------
+# Step 3. Save splits
+# -----------------------
 train_df.to_csv(f"{OUTPUT_DIR}/train.csv", index=False)
 val_df.to_csv(f"{OUTPUT_DIR}/val.csv", index=False)
 test_df.to_csv(f"{OUTPUT_DIR}/test.csv", index=False)
 
 print(f"✅ train.csv, val.csv, test.csv created in {OUTPUT_DIR}")
 print(f"Train: {len(train_df)} images, Val: {len(val_df)} images, Test: {len(test_df)} images")
-print("Label distribution (positives %):")
-print("Train:", train_df['label'].mean())
-print("Val:", val_df['label'].mean())
-print("Test:", test_df['label'].mean())
+
+# Optional: check label distributions (average prevalence per class)
+diseases = train_df.columns[2:]  # skip Image Index + Patient ID
+print("\nLabel prevalence per set:")
+print("Train:\n", train_df[diseases].mean())
+print("Val:\n", val_df[diseases].mean())
+print("Test:\n", test_df[diseases].mean())
