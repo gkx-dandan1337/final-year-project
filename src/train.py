@@ -15,7 +15,7 @@ def main():
     # -----------------------
     train_loader, val_loader, test_loader = get_dataloaders(
         img_dir="data/images",
-        batch_size=16          # CheXNet used 16 (GPU safe)
+        batch_size=16          
     )
 
     # -----------------------
@@ -37,7 +37,7 @@ def main():
     # -----------------------
     # 4. Training loop
     # -----------------------
-    EPOCHS = 20
+    EPOCHS = 15
     best_auc = 0.0
 
     for epoch in range(EPOCHS):

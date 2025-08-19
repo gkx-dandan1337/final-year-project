@@ -25,6 +25,10 @@ class ChestXrayDataset(Dataset):
         img_name = self.data.iloc[idx, 0]   # column 0 = filename
         labels   = self.data.iloc[idx, 2:].values.astype("float32")  # columns 2..end = one-hot labels
 
+        # img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
+        # if not os.path.exists(img_path):
+        #     print(*)
+        
         img_path = os.path.join(self.img_dir, img_name)
         image = Image.open(img_path).convert("RGB")
 
@@ -56,7 +60,7 @@ val_test_transform = transforms.Compose([
 # -----------------------
 # Dataloader function
 # -----------------------
-def get_dataloaders(img_dir="data/images", batch_size=32,
+def get_dataloaders(img_dir="data\images", batch_size=32,
                     train_csv="data/train.csv", val_csv="data/val.csv", test_csv="data/test.csv"):
     train_dataset = ChestXrayDataset(train_csv, img_dir, transform=train_transform)
     val_dataset   = ChestXrayDataset(val_csv, img_dir, transform=val_test_transform)

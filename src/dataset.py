@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 # -----------------------
 # Paths
 # -----------------------
-LABELS_CSV = "data/labels_onehot.csv"   # <- your new one-hot file
+LABELS_CSV = "data/labels_onehot.csv"   
 OUTPUT_DIR = "data"
 
 # -----------------------

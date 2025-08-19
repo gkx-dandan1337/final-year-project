@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Path to original CSV
-CSV_PATH = r"C:\Users\HP\Desktop\Final Year Project Final Draft\final-year-project\data\Data_Entry_2017_v2020 (1).csv"
+CSV_PATH = "final-year-project\data\Data_Entry_2017_v2020 (1).csv"
 OUTPUT_PATH = "data/labels_onehot.csv"
 
 # The 14 disease labels (CheXNet setup)
