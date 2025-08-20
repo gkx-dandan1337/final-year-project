@@ -34,7 +34,7 @@ class ChestXrayDataset(Dataset):
         labels = torch.tensor(labels, dtype=torch.float32)  # shape [14]
         
         # return image, labels, and the filename (not the whole path if you prefer clean names)
-        return image, labels, img_name
+        return image, labels
 
 
 # -----------------------
@@ -59,14 +59,15 @@ val_test_transform = transforms.Compose([
 # -----------------------
 # Dataloader function
 # -----------------------
-def get_dataloaders(img_dir="data\images", batch_size=32,
-                    train_csv="data/train.csv", val_csv="data/val.csv", test_csv="data/test.csv"):
+def get_dataloaders(img_dir="data\\images", batch_size=32,
+                    train_csv="data/train.csv", val_csv="data/val.csv", test_csv="data/test.csv",
+                    num_workers=0, pin_memory=True):
     train_dataset = ChestXrayDataset(train_csv, img_dir, transform=train_transform)
     val_dataset   = ChestXrayDataset(val_csv, img_dir, transform=val_test_transform)
     test_dataset  = ChestXrayDataset(test_csv, img_dir, transform=val_test_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+    val_loader   = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
+    test_loader  = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory)
 
     return train_loader, val_loader, test_loader

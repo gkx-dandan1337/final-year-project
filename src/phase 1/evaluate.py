@@ -33,7 +33,7 @@ def main():
     model.classifier = nn.Linear(num_features, 14)  # trained with 14 outputs
     model = model.to(device)
 
-    model.load_state_dict(torch.load("best_model.pth", map_location=device))
+    model.load_state_dict(torch.load("src/models/best_model.pth", map_location=device))
     model.eval()
 
     # Pneumonia index in CheXNet dataset (verify this matches your CSV order)
@@ -121,7 +121,7 @@ def main():
     plt.ylabel("True Positive Rate")
     plt.title("ROC Curve (Pneumonia)")
     plt.legend()
-    plt.savefig("roc_curve.png", dpi=300)   # <--- saves image
+    plt.savefig("results/roc_curve.png", dpi=300)   # <--- saves image
     plt.close()
 
     # Save PR curve
@@ -131,7 +131,7 @@ def main():
     plt.ylabel("Precision")
     plt.title("Precision-Recall Curve (Pneumonia)")
     plt.legend()
-    plt.savefig("pr_curve.png", dpi=300)
+    plt.savefig("results/pr_curve.png", dpi=300)
     plt.close()
 
     # Save confusion matrix
@@ -142,7 +142,7 @@ def main():
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.title("Confusion Matrix (Pneumonia)")
-    plt.savefig("confusion_matrix.png", dpi=300)
+    plt.savefig("results/confusion_matrix.png", dpi=300)
     plt.close()
 
 if __name__ == "__main__":
