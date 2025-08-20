@@ -5,8 +5,8 @@ import os
 # ----------------------------
 # Config
 # ----------------------------
-CSV_PATH = "outputs/test_predictions.csv"   # path to your saved predictions
-OUTPUT_DIR = "outputs/slices"               # where to save subsets
+CSV_PATH = "src/phase2/outputs/results.csv"   # path to your saved predictions
+OUTPUT_DIR = "src/phase2/outputs/slices"               # where to save subsets
 SAMPLES_PER_GROUP = 30                      # how many per class to keep
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)

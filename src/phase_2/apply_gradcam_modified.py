@@ -32,9 +32,15 @@ transform = transforms.Compose([
                          std=[0.229,0.224,0.225])
 ])
 
-class XrayDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_file, img_dir, transform=None):
-        self.df = pd.read_csv(csv_file)
+class PredictionSubsetDataset(torch.utils.data.Dataset):
+    def __init__(self, preds_csv, img_dir, transform=None, subset_filter=None):
+        df = pd.read_csv(preds_csv)
+
+        # Apply filtering if provided (example: only pneumonia false negatives)
+        if subset_filter:
+            df = subset_filter(df)
+
+        self.df = df.reset_index(drop=True)
         self.img_dir = img_dir
         self.transform = transform
 
@@ -48,16 +54,29 @@ class XrayDataset(torch.utils.data.Dataset):
 
         if self.transform:
             img_tensor = self.transform(img)
+        else:
+            img_tensor = img
 
-        # return tensor + metadata (filename)
-        return img_tensor, row["Image Index"]
+        # return tensor + metadata (filename, prob, label)
+        return img_tensor, row["Image Index"], row["Pneumonia_label"], row["Pneumonia_prob"]
 
+# Example subset filter: False Negatives (label=1 but prob<0.5)
+def subset_false_negatives(df):
+    return df[(df["Pneumonia_label"] == 1) & (df["Pneumonia_prob"] < 0.5)]
 
-test_dataset = XrayDataset("data/test.csv", "data/images", transform=transform)
+# -----------------------------
+# 3. Load dataset
+# -----------------------------
+preds_csv = "outputs/get_predictions.csv"
+img_dir = "data/images"
+
+test_dataset = PredictionSubsetDataset(
+    preds_csv, img_dir, transform=transform, subset_filter=subset_false_negatives
+)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # -----------------------------
-# 3. Grad-CAM implementation
+# 4. Grad-CAM implementation
 # -----------------------------
 gradients = []
 activations = []
@@ -98,21 +117,21 @@ def grad_cam(input_tensor, class_idx):
     return cam
 
 # -----------------------------
-# 4. Run Grad-CAM on Pneumonia class
+# 5. Run Grad-CAM on Pneumonia class
 # -----------------------------
-PNEUMONIA_IDX = 12 # confirm this matches your label mapping!
+PNEUMONIA_IDX = 12  # double-check mapping!
 
 save_dir = "outputs/gradcam"
 os.makedirs(save_dir, exist_ok=True)
 
-for i, (img_tensor, fname) in enumerate(tqdm(test_loader)):
+for i, (img_tensor, fname, true_label, pred_prob) in enumerate(tqdm(test_loader)):
     img_tensor = img_tensor.to(device)
 
     heatmap = grad_cam(img_tensor, class_idx=PNEUMONIA_IDX)
     heatmap = cv2.applyColorMap(np.uint8(255*heatmap), cv2.COLORMAP_JET)
 
     # Reload original image for overlay
-    orig_img = Image.open(os.path.join("data/images", fname[0])).convert("RGB")
+    orig_img = Image.open(os.path.join(img_dir, fname[0])).convert("RGB")
     orig_resized = np.array(orig_img.resize((224,224)))
     overlay = cv2.addWeighted(orig_resized, 0.5, heatmap, 0.5, 0)
 
@@ -121,5 +140,6 @@ for i, (img_tensor, fname) in enumerate(tqdm(test_loader)):
 
     if i < 5:
         plt.imshow(overlay)
-        plt.title(f"Grad-CAM: {fname[0]}")
+        plt.title(f"{fname[0]} | Label={true_label.item()} | Prob={pred_prob.item():.2f}")
+        plt.axis("off")
         plt.show()
