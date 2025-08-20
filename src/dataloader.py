@@ -24,10 +24,6 @@ class ChestXrayDataset(Dataset):
     def __getitem__(self, idx):
         img_name = self.data.iloc[idx, 0]   # column 0 = filename
         labels   = self.data.iloc[idx, 2:].values.astype("float32")  # columns 2..end = one-hot labels
-
-        # img_path = os.path.join(self.img_dir, self.img_labels.iloc[idx, 0])
-        # if not os.path.exists(img_path):
-        #     print(*)
         
         img_path = os.path.join(self.img_dir, img_name)
         image = Image.open(img_path).convert("RGB")
@@ -36,7 +32,10 @@ class ChestXrayDataset(Dataset):
             image = self.transform(image)
 
         labels = torch.tensor(labels, dtype=torch.float32)  # shape [14]
-        return image, labels
+        
+        # return image, labels, and the filename (not the whole path if you prefer clean names)
+        return image, labels, img_name
+
 
 # -----------------------
 # Transforms
