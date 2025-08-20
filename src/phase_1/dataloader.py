@@ -34,7 +34,7 @@ class ChestXrayDataset(Dataset):
         labels = torch.tensor(labels, dtype=torch.float32)  # shape [14]
         
         # return image, labels, and the filename (not the whole path if you prefer clean names)
-        return image, labels
+        return image, labels , img_name #filename
 
 
 # -----------------------
