@@ -61,18 +61,18 @@ def integrated_gradients(input_tensor, target_class, baseline=None, steps=50):
 # 4. Load predictions CSV
 # -----------------------------
 preds = pd.read_csv("outputs/get_predictions.csv")
-
-# Example subset: True Positives (label=1 and prob>0.5)
-subset = preds[(preds["Pneumonia_label"]==1) & (preds["Pneumonia_prob"]>=0.5)]
+preds["Pred_label"] = (preds["Pneumonia_prob"] >= 0.5).astype(int)
 
 # -----------------------------
-# 5. Run IG on subset
+# 5. Run IG on all cases and save into TP/FP/FN/TN
 # -----------------------------
-PNEUMONIA_IDX = 12  # confirm this is correct for your label mapping!
-save_dir = "outputs/integrated_gradients"
-os.makedirs(save_dir, exist_ok=True)
+PNEUMONIA_IDX = 12  # confirm mapping!
+base_dir = "outputs/integrated_gradients"
+categories = ["TP", "FP", "FN", "TN"]
+for cat in categories:
+    os.makedirs(os.path.join(base_dir, cat), exist_ok=True)
 
-for idx, row in subset.iterrows():
+for idx, row in preds.iterrows():
     fname = row["Image Index"]
     img_path = os.path.join("data/images", fname)
 
@@ -90,15 +90,28 @@ for idx, row in subset.iterrows():
     overlay = overlay.astype(np.uint8)
     blended = (0.5 * np.array(orig_img) + 0.5 * overlay).astype(np.uint8)
 
+    # Decide TP/FP/FN/TN
+    true_label = row["Pneumonia_label"]
+    pred_label = row["Pred_label"]
+
+    if true_label == 1 and pred_label == 1:
+        subset = "TP"
+    elif true_label == 0 and pred_label == 1:
+        subset = "FP"
+    elif true_label == 1 and pred_label == 0:
+        subset = "FN"
+    else:
+        subset = "TN"
+
     # Save
-    save_path = os.path.join(save_dir, f"{fname}_ig.jpg")
+    save_path = os.path.join(base_dir, subset, f"{fname}_ig.jpg")
     Image.fromarray(blended).save(save_path)
 
     # Optional: preview a few
     if idx < 3:
         plt.imshow(blended)
-        plt.title(f"IG: {fname} | Label={row['Pneumonia_label']} | Prob={row['Pneumonia_prob']:.2f}")
+        plt.title(f"IG: {fname} | True={true_label} | Prob={row['Pneumonia_prob']:.2f} | {subset}")
         plt.axis("off")
         plt.show()
 
-print(f"Saved {len(subset)} Integrated Gradients explanations to {save_dir}")
+print("✅ Integrated Gradients explanations saved into TP/FP/FN/TN folders")

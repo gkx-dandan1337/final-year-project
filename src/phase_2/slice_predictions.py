@@ -37,13 +37,13 @@ fn_sample = fn.sample(min(SAMPLES_PER_GROUP, len(fn)), random_state=42)
 # ----------------------------
 # Save each slice
 # ----------------------------
-tp_sample.to_csv(os.path.join(OUTPUT_DIR, "tp.csv"), index=False)
-tn_sample.to_csv(os.path.join(OUTPUT_DIR, "tn.csv"), index=False)
-fp_sample.to_csv(os.path.join(OUTPUT_DIR, "fp.csv"), index=False)
-fn_sample.to_csv(os.path.join(OUTPUT_DIR, "fn.csv"), index=False)
+tp_sample.to_csv(os.path.join(OUTPUT_DIR, "src/phase_2/outputs/subsets/tp.csv"), index=False)
+tn_sample.to_csv(os.path.join(OUTPUT_DIR, "src/phase_2/outputs/subsets/tn.csv"), index=False)
+fp_sample.to_csv(os.path.join(OUTPUT_DIR, "src/phase_2/outputs/subsets/fp.csv"), index=False)
+fn_sample.to_csv(os.path.join(OUTPUT_DIR, "src/phase_2/outputs/subsets/fn.csv"), index=False)
 
 # Also save one merged subset for convenience
 subset = pd.concat([tp_sample, tn_sample, fp_sample, fn_sample])
-subset.to_csv(os.path.join(OUTPUT_DIR, "subset_balanced.csv"), index=False)
+subset.to_csv(os.path.join(OUTPUT_DIR, "src/phase_2/outputs/subset_balanced.csv"), index=False)
 
 print("✅ Slices saved in:", OUTPUT_DIR)

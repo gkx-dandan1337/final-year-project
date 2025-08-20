@@ -32,7 +32,7 @@ transform = transforms.Compose([
 ])
 
 # -----------------------------
-# 3. Helper: prediction function for LIME
+# 3. Prediction function for LIME
 # -----------------------------
 def predict_fn(images_np):
     model.eval()
@@ -50,20 +50,21 @@ def predict_fn(images_np):
 # 4. Load predictions CSV
 # -----------------------------
 preds = pd.read_csv("outputs/get_predictions.csv")
-
-# Example subset: False Negatives
-subset = preds[(preds["Pneumonia_label"]==1) & (preds["Pneumonia_prob"]<0.5)]
+# add predicted label column (threshold = 0.5)
+preds["Pred_label"] = (preds["Pneumonia_prob"] >= 0.5).astype(int)
 
 # -----------------------------
-# 5. LIME on subset and save
+# 5. LIME on all cases (save into TP/FP/FN/TN)
 # -----------------------------
 explainer = lime_image.LimeImageExplainer()
 PNEUMONIA_IDX = 12  # confirm mapping!
 
-save_dir = "outputs/lime"
-os.makedirs(save_dir, exist_ok=True)
+base_dir = "outputs/lime"
+categories = ["TP", "FP", "FN", "TN"]
+for cat in categories:
+    os.makedirs(os.path.join(base_dir, cat), exist_ok=True)
 
-for idx, row in subset.iterrows():
+for idx, row in preds.iterrows():
     fname = row["Image Index"]
     img_path = os.path.join("data/images", fname)
 
@@ -87,15 +88,27 @@ for idx, row in subset.iterrows():
 
     overlay = mark_boundaries(temp/255.0, mask)
 
-    # Save to file
-    save_path = os.path.join(save_dir, f"{fname}_lime.jpg")
+    # Decide TP/FP/FN/TN
+    true_label = row["Pneumonia_label"]
+    pred_label = row["Pred_label"]
+
+    if true_label == 1 and pred_label == 1:
+        subset = "TP"
+    elif true_label == 0 and pred_label == 1:
+        subset = "FP"
+    elif true_label == 1 and pred_label == 0:
+        subset = "FN"
+    else:
+        subset = "TN"
+
+    save_path = os.path.join(base_dir, subset, f"{fname}_lime.jpg")
     plt.imsave(save_path, overlay)
 
-    # Optional: preview first few
+    # optional preview for first few
     if idx < 3:
         plt.imshow(overlay)
-        plt.title(f"LIME: {fname} | Label={row['Pneumonia_label']} | Prob={row['Pneumonia_prob']:.2f}")
+        plt.title(f"LIME: {fname} | True={true_label} | Prob={row['Pneumonia_prob']:.2f} | {subset}")
         plt.axis("off")
         plt.show()
 
-print(f"Saved {len(subset)} LIME explanations to {save_dir}")
+print("✅ LIME explanations saved into TP/FP/FN/TN folders")
